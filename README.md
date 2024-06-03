@@ -134,7 +134,7 @@ Can high ratings  (scores greater than or equal to 95) be predicted using price,
 
 Our analysis provides several key insights into the factors influencing property ratings and guest satisfaction on Airbnb. These findings have practical implications for property owners looking to enhance their listings and improve their review scores. Additionally, I gained a deeper understanding of statistical analysis using R, which will be valuable for future research and practical applications.
 
-###Implications
+### Implications
 
 The study highlights the significant impact of pricing strategy, room features, and host responsiveness on guest satisfaction. Property owners can leverage these insights to make strategic adjustments:
 
