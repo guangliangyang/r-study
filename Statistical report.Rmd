@@ -1,5 +1,5 @@
 ---
-title: "| COMP828 Assignment\n| Semester 1 2024   \n"
+title: "| COMP828 Assignment\n| Semester 1 2024   \n| Analyzing Guest Satisfaction for Airbnb Apartments\n"
 author: |
   | Ricky Yang
   | ID Number: 23205919
@@ -11,7 +11,7 @@ output:
     extra_dependencies: ["fontspec"] 
 papersize: a4
 fontsize: 11pt
-bibliography: [reference_list.bib]  
+bibliography: [reference_list.bib]   
 nocite: '@*'
 ---
 
@@ -56,14 +56,15 @@ lapply(necessary_packages, library, character.only = TRUE)
 
 ## Introduction
  
+
 Airbnb, as a prominent product of the sharing economy, has indeed seen rapid growth in recent years, providing a unique alternative to traditional hotel accommodations with a wide range of short-term and long-term lodging options. Various studies have delved into different aspects of Airbnb, particularly focusing on the factors that influence customer satisfaction and ratings [@customer1]. One key area of research has been the impact of factors such as listing functionality, host attributes, customer reviews, and market conditions on guest satisfaction. These studies aim to understand how these elements collectively shape the overall experience of guests, ultimately influencing their review scores and the likelihood of them returning [@customer2]. For example, the quality of service provided by hosts, the amenities offered, and the location of the accommodation all play crucial roles in determining guest satisfaction levels [@customer3]. Moreover, research has also highlighted the significance of rental policies, listing reputation, and location in influencing guest satisfaction levels. Factors such as the clarity of rental policies, the reputation of the listing, and the convenience of the location can greatly impact how satisfied guests are with their overall experience [@customer4]. By examining these various factors that contribute to customer satisfaction in the context of Airbnb, researchers aim to provide valuable insights for hosts and practitioners to enhance the overall guest experience and increase customer satisfaction levels [@customer1].
 
-In this project, we aim to extend this body of research by focusing on the factors influencing property ratings and guest satisfaction on Airbnb. Specifically, we will explore the relationship between high ratings  (scores greater than or equal to 95) and various predictors, including price, regional average price, number of bedrooms, number of bathrooms, host response rate, and room type. By building suitable models, we seek to uncover the determinants of high ratings and provide actionable insights for property owners. Additionally, we will analyze how these factors can be adjusted to optimize guest satisfaction and improve overall ratings, thereby enhancing the competitive edge of Airbnb listings.
+In this project, we aim to extend this body of research by focusing on the factors influencing property ratings and guest satisfaction on Airbnb, specifically for properties listed as "Apartments" We will explore the relationship between high ratings (scores greater than or equal to 95) and various predictors, including price, host tenure, number of reviews, regional average price, number of bedrooms, number of bathrooms, host response rate, and room type. By building suitable models, we seek to uncover the determinants of high ratings and provide actionable insights for property owners. Additionally, we will analyze how these factors can be adjusted to optimize guest satisfaction and improve overall ratings, thereby enhancing the competitive edge of Airbnb listings.
 
 ## Dataset Description
 
 ### Source
-The dataset to be analyzed is collected from https://data.world/cannata/gaairbnb and is named "AirBNB.csv". 
+The dataset to be analyzed is collected from https://data.world/cannata/gaairbnb and is named "AirBNB.csv" [@data_source]. 
 
 ### File Type
 Dataset file type: CSV
@@ -120,7 +121,7 @@ variables <- data.frame(
 # Display the data frame as a table with horizontal lines
 
 variables %>%
-  kable(caption = "List of Variables in the Airbnb Dataset", booktabs = TRUE) %>%
+  kable(caption = "List of Variables in the Airbnb Raw Dataset", booktabs = TRUE) %>%
   kable_styling(full_width = FALSE) %>%
   row_spec(0, bold = TRUE) %>%
   column_spec(1, width = "4cm") %>%  # Adjust the width of the first column
@@ -133,7 +134,7 @@ variables %>%
 ### Raw Dataset Screenshot
 
 
-```{r screenshot, echo=FALSE, fig.cap="Raw Dataset Screenshot", out.width = '100%', fig.align='center'}
+```{r screenshot, echo=FALSE, fig.cap="Airbnb Raw Dataset Screenshot", out.width = '100%', fig.align='center'}
 include_graphics("data_screenshot.jpg")
 ```
 
@@ -198,7 +199,7 @@ Do properties with prices at different levels relative to the regional average p
 
 
 ### Research question 2
-Can property ratings be predicted using price, regional average price, number of bedrooms , number of accommodates , and number of bathrooms ? Additionally, are the differences in ratings significant across different room types?
+Can property ratings be predicted using price, regional average price, number of bedrooms , number of accommodates ,room types, and number of bathrooms ? 
 
 **1. Variables Considered:**
 
@@ -226,17 +227,15 @@ Can property ratings be predicted using price, regional average price, number of
 
 
 ### Research question 3
-Can high ratings  (scores greater than or equal to 95) be predicted using price, regional average price, number of bedrooms, number of bathrooms, host response rate , and room type?
+Can high ratings (scores greater than or equal to 95) be predicted using price, host tenure (measured by "host_since_year" ), number of reviews, regional average price, and host response rate?
 
 **1. Variables Considered:**
 
 * **Price:** The nightly rental price of the property.
-* **Region Average Price:** The average price in the region where the property is located.
-* **Bedrooms:** The number of bedrooms in the property.
-* **Bathrooms:** The number of bathrooms in the property.
-* **Host Response Rate:** The rate at which the host responds to inquiries.
-* **Room Type:** The type of room (e.g., entire home/apartment, private room, shared room).
-* **High Rating (Binary):** Whether the property received a rating of 95 or higher (1 for high rating, 0 otherwise).
+* **Host Since Year:** The year when the host joined Airbnb, indicating their tenure in the platform. 
+* **Number of Reviews:** The total number of reviews received by the property.
+* **Regional Average Price:** The average price in the region where the property is located, providing context for pricing.
+* **Host Response Rate:** The rate at which the host responds to inquiries, reflecting host engagement and responsiveness.
 
 **2. Type of Analysis:**
 
@@ -262,11 +261,17 @@ This section will prepare a well-structured dataset for subsequent analytics con
 
 ## Data Import
 Since the raw data is in CSV format, we use the function "read.csv" to import it. Then, we filter out the observations related to the property type "Apartment." 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r echo=TRUE,  message=FALSE, warning=FALSE}
 # import dataset and filter out apartment
 tb<-read.csv("AirBnb.csv") %>%   filter(property_type=="Apartment")
-names(tb)
+
+# Display total number of rows
+total_rows <- nrow(tb) 
+
 ```
+
+The total number of rows in the filtered data is `r total_rows`.
+
 
 ## Cleaning
 
@@ -286,6 +291,23 @@ colnames(tb) <- clean_names(colnames(tb))
 
 ```
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# Get column names, column types, and count of NA values
+column_info <- data.frame(
+  Column_Names = names(tb),
+  Column_Types = sapply(tb, class),
+  NA_Count = sapply(tb, function(x) sum(is.na(x)))
+)
+ 
+
+kable(column_info[, 2:3], col.names = c("Column Names", "Column Types", "NA Count")
+      , caption = "Columns after Tidying the variable names") %>%
+  kable_styling(latex_options = c("striped", "scale_down"))
+ 
+
+```
+
 
 ### Select variables
 
@@ -300,6 +322,8 @@ Although our dataset includes many columns, we have selected a subset for analys
 * **Number of Bathrooms:** The number of bathrooms in the property.
 * **Host Response Rate:** The rate at which the host responds to inquiries.
 * **Room Type:** The type of room (e.g., entire home/apartment, private room, shared room).
+* **Host Since Year:** The year when the host joined Airbnb, indicating their tenure in the platform. 
+* **Number of Reviews:** The total number of reviews received by the property.
 
 **Reasons for Selection:**
 
@@ -312,12 +336,10 @@ Although our dataset includes many columns, we have selected a subset for analys
 # select the necessary variables
 tb.selected<-tb %>% 
   select(price,accommodates,bathrooms,bedrooms,room_type,
-                host_response_rate,review_scores_rating,neighbourhood_cleansed)
-
-str(head(tb.selected,1))
+                host_response_rate,review_scores_rating,neighbourhood_cleansed
+           ,host_since_year  ,  number_of_reviews) 
+```
  
-
-``` 
 ### Remove Duplicate Rows
 
 Removing duplicate rows is crucial in R statistics to ensure data accuracy. Duplicate entries can skew analysis and lead to incorrect results. For instance, having multiple identical listings would distort average price calculations and other statistical metrics, leading to misleading conclusions.
@@ -339,11 +361,23 @@ tb.selected <- tb.selected %>%
 
 ### Data type conversion
 
-Data type conversion is essential in data processing, ensuring that each variable is in the appropriate format for analysis. Converting data types helps prevent errors and allows statistical and computational methods to be applied correctly. Given a view of the selected variables, we found that some variables are in the wrong type. For example, the variable "price" and "host_response_rate" should be numerical but were in character type. Converting these to numeric types allows for accurate calculations and meaningful analysis, such as determining average prices and response rates.
+Data type conversion is essential in data processing, ensuring that each variable is in the appropriate format for analysis. Converting data types helps prevent errors and allows statistical and computational methods to be applied correctly. Given a view of the selected variables, we found that some variables are in the wrong type. For example, the variables "price" and "host_response_rate" should be numerical but were in character type. Converting these to numeric types allows for accurate calculations and meaningful analysis, such as determining average prices and response rates.
+
+Additionally, certain variables representing counts or quantities, such as "accommodates," "bathrooms," and "bedrooms," should be converted to integer or numeric types. This ensures that statistical summaries and analyses, such as calculating means or generating boxplots, are accurate and meaningful.
 ```{r warning=FALSE}
 # change the type of some variables 
+
 tb.selected$price<-parse_number(tb.selected$price)
-tb.selected$host_response_rate<-as.numeric(tb.selected$host_response_rate)
+tb.selected$host_response_rate<-as.numeric(tb.selected$host_response_rate) 
+tb.selected$review_scores_rating<-as.numeric(tb.selected$review_scores_rating) 
+
+tb.selected$accommodates<-as.numeric(tb.selected$accommodates) 
+tb.selected$bathrooms<-as.numeric(tb.selected$bathrooms) 
+tb.selected$bedrooms<-as.numeric(tb.selected$bedrooms)   
+
+tb.selected$host_since_year<-as.numeric(tb.selected$host_since_year)   
+tb.selected$number_of_reviews<-as.numeric(tb.selected$number_of_reviews)  
+    
 ```
 
 ### Handling missing values
@@ -359,16 +393,16 @@ The provided boxplots visually identify outliers and invalid data points across 
 
 Since the sample size is large, we are going to remove the observations with invalid data in any column.  
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r, figure_outliers, fig.cap="Data distribution before handling invalids and outliers", echo=FALSE, message=FALSE, warning=FALSE}
 
 # Display boxplots for each relevant variable to identify outliers
-variables <- c("price", "accommodates", "bathrooms", "bedrooms")
+variables <- c("price", "accommodates", "bathrooms", "bedrooms","host_since_year","number_of_reviews")
 
 # Create plots for each variable
 plot_list <- lapply(variables, function(var) {
   ggplot(tb.clean, aes_string(x = "factor(1)", y = var)) + 
     geom_boxplot() +
-    labs(title = paste("Boxplot of", var), x = "", y = var) +
+    labs(title =var, x = "", y = var) +
     theme(axis.text.x = element_blank(), 
           axis.ticks.x = element_blank(), 
           plot.title = element_text(hjust = 0.5))
@@ -380,13 +414,17 @@ combined_plot <- wrap_plots(plot_list) + plot_layout(ncol = 2)
 # Print combined plot
 print(combined_plot)
 
+```
+
+
+```{r}
 
 # Handle invalid data
 tb.clean <- tb.clean %>%
-  filter(price > 0, accommodates > 0, accommodates < 12, bathrooms >= 0, bedrooms > 0)
-
-
-
+  filter(price > 0, 
+         accommodates > 0, accommodates < 12, 
+         bathrooms >= 0, bedrooms > 0,
+         host_since_year >= 2008, number_of_reviews >= 0) 
 
 ```
 
@@ -438,7 +476,7 @@ tb.clean <- tb.clean %>%
 ```
 
 
-## Tidying
+## Ensuring Tidy Data Compliance
 
 Ensuring the data follows the three rules of “Tidy Data” is essential for effective data analysis. The three rules are: each variable forms a column, each observation forms a row, and each type of observational unit forms a table. The provided dataset adheres to these principles.
 
@@ -451,7 +489,7 @@ The table displays various variables: price, accommodates, bathrooms, bedrooms, 
 * **Rows (Observations):** Each row represents an individual Airbnb listing, providing all relevant details in a single, unified format.
 * **Table (Observational Unit):** The table represents a single observational unit, which in this case, is the Airbnb listing.
   
-```{r echo=FALSE, message=FALSE}
+```{r table-after-cleaning,echo=FALSE, message=FALSE,warning=FALSE}
   
 tb_head <- head(tb.clean)
 
@@ -460,22 +498,30 @@ tb_head <- head(tb.clean)
 #  kable_styling(latex_options="scale_down")
 
 # Split the dataframe into two parts
-tb_part1 <- tb_head[,1:5 ]
-tb_part2 <- tb_head[,6:8 ]
+tb_part1 <- tb_head[,1:6 ]
+tb_part2 <- tb_head[,7:10 ]
 
 # Display first part of the table
-kable(tb_part1, format = "latex", booktabs = TRUE, longtable = TRUE) %>%
-  kable_styling(latex_options = c("hold_position")) %>%
+kable(tb_part1, format = "latex"
+      , caption = "Data after Cleaning (Part A)"
+      , booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("striped", "scale_down")) %>%
   column_spec(1, bold = TRUE) %>%
   row_spec(0, bold = TRUE)
  
+
+ 
+
 # Display second part of the table
-kable(tb_part2, format = "latex", booktabs = TRUE, longtable = TRUE) %>%
-  kable_styling(latex_options = c("hold_position")) %>%
+kable(tb_part2, format = "latex"
+      , caption = "Data after Cleaning (Part B)"
+      , booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("striped", "scale_down")) %>%
   column_spec(1, bold = TRUE) %>%
   row_spec(0, bold = TRUE)
  
 ```
+
 
 ## Summary
 
@@ -494,7 +540,7 @@ The statistics indicate that the data cleaning and preprocessing steps successfu
 
 
 
-```{r echo=FALSE, message=FALSE}
+```{r echo=FALSE, message=FALSE,warning=FALSE}
 #kable(summary(tb.clean))   
 tb_head <-summary(tb.clean)
 
@@ -503,14 +549,21 @@ tb_part1 <- tb_head[,1:5 ]
 tb_part2 <- tb_head[,6:8 ]
 
 # Display first part of the table
-kable(tb_part1, format = "latex", booktabs = TRUE, longtable = TRUE) %>%
-  kable_styling(latex_options = c("hold_position")) %>%
+kable(tb_part1, format = "latex"
+      , caption = "The data statistics  after Cleaning (Part A)"
+      , booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("striped")) %>%
   column_spec(1, bold = TRUE) %>%
   row_spec(0, bold = TRUE)
  
+ 
+
+
 # Display second part of the table
-kable(tb_part2, format = "latex", booktabs = TRUE, longtable = TRUE) %>%
-  kable_styling(latex_options = c("hold_position")) %>%
+kable(tb_part2, format = "latex"
+      , caption = "The data statistics  after Cleaning (Part B)"
+      , booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("striped", "scale_down")) %>%
   column_spec(1, bold = TRUE) %>%
   row_spec(0, bold = TRUE)
 ```
@@ -526,22 +579,9 @@ kable(tb_part2, format = "latex", booktabs = TRUE, longtable = TRUE) %>%
 
 To determine whether properties with prices at different levels relative to the regional average price have significantly different ratings. This analysis aims to explore if pricing strategy impacts customer satisfaction as reflected in review scores.
 
-### Method
+First, we calculated the price ratio for each property by dividing its price by the regional average price and determined the mean and standard deviation of these ratios. Properties were then categorized into four groups based on their price ratio: below average, average minus, average plus, and above average. Below average properties had price ratios less than one standard deviation below the mean, average minus properties were up to the mean, average plus were up to one standard deviation above, and above average exceeded one standard deviation above.
 
-We divided the properties into groups based on their prices relative to the regional average price and then analyzed their review scores. The steps are as follows:
-
-1. **Divide Prices Relative to Regional Average Price:**
-   * Calculate the price ratio for each property by dividing its price by the regional average price.
-   * Determine the mean and standard deviation of these price ratios.
-   * Categorize properties into four groups: below average, average minus, average plus, and above average based on their price ratio.
-2. **Calculate Group Statistics:**
-   * Compute the mean and standard deviation of review scores for each price group.
-3. **Perform ANOVA:**
-   * Conduct an ANOVA test to assess if there are statistically significant differences in review scores among the different price groups.
-4. **Conduct T-Test:**
-   * Perform a t-test to compare the review scores between two specific groups (below average and above average) to identify significant differences.
-5. **Visualize Data:**
-   * Generate a box plot to visualize the distribution of review scores across the different price groups.
+Next, we computed the mean and standard deviation of review scores for each group. An ANOVA test was conducted to assess statistically significant differences in review scores among the groups. Additionally, a t-test compared the review scores between the below average and above average groups to identify significant differences. Finally, a box plot visualized the distribution of review scores across the different price groups.
 
 ### Result
  
@@ -578,7 +618,7 @@ scores.avg <- tb.analysis1 %>%
   
 kable(scores.avg, align="lcrlll", #normally use r alignment for numbers
       digits=3,
-      caption = "review scores rating  mean and standard deviation for different price")
+      caption = "Guest Satisfaction for Different Price Group")
 ```
 
 ```{r echo=FALSE}
@@ -589,10 +629,12 @@ anova_result <- aov(review_scores_rating ~ price_group, data = tb.analysis1)
 
 ```
 
-```{r review_scores_rating_boxplot, echo=FALSE,fig.cap="review scores rating  mean and standard deviation for different price "}
+```{r review_scores_rating_boxplot, echo=FALSE,fig.cap="Review Scores Rating  mean and standard deviation for different price group "}
 
 # Generate box plot
-boxplot(review_scores_rating ~ price_group, data = tb.analysis1, xlab = "Price Group", ylab = "Review Scores Rating")
+boxplot(review_scores_rating ~ price_group
+        , caption = "Review Scores Rating  mean and standard deviation for different price group"
+        , data = tb.analysis1, xlab = "Price Group", ylab = "Review Scores Rating")
 ```
 
 ```{r echo=FALSE}
@@ -616,172 +658,162 @@ p_value <- t_test_result$p.value
 ci_lower <- t_test_result$conf.int[1]
 ci_upper <- t_test_result$conf.int[2]
 
-# Create a data frame for the summary table
-group_summary <- data.frame(
-  Group = c("below_avg", "above_avg"),
-  Mean = c(mean1, mean2),
-  SE = c(se1, se2)
+# Create the data frame
+data2 <- data.frame(
+  Statistic_Name = c("below_avg_mean1", "below_avg_se1", "below_avg_mean2", "below_avg_se2", "t_value", "df", "p_value", "CI_Lowe", "CI_Uppe"),
+  Value = c(mean1, se1, mean2, se2, t_value, df, p_value, ci_lower, ci_upper)
 )
-
-t_test_summary <- data.frame(
-  Statistic = c("t_value", "df", "p_value", "CI_Lower", "CI_Upper"),
-  Value = c(t_value, df, p_value, ci_lower, ci_upper)
-)
+ 
 
 
 ```
 
 ```{r kable_price_group_t_test1, echo=FALSE}
    
-kable(t_test_summary, align="lcrlll", #normally use r alignment for numbers
+kable(data2, align="lcrlll", #normally use r alignment for numbers
       digits=3,
-      caption = "T-test Summary（below_avg Vs. above_avg）1")
+      caption = "T-test Summary “below_avg” Vs. “above_avg” ")
+
+
+ 
 ```
 
-```{r kable_price_group_t_test2, echo=FALSE}
- 
-  
-kable(group_summary, align="lcrlll", #normally use r alignment for numbers
-      digits=3,
-      caption = "T-test Summary（below_avg Vs. above_avg）2")
-``` 
 
-### analysis
+### Analysis
+
+Table 7 shows that the “above average” group had a mean rating of `r round(scores.avg[1, "average"], 3)` and a smaller standard deviation (`r round(scores.avg[1, "SD"], 3)`), indicating more consistent ratings. In contrast, the “below average” group had a lower mean rating (`r round(scores.avg[4, "average"], 3)`) and a larger standard deviation (`r round(scores.avg[4, "SD"], 3)`), indicating greater variability in ratings. Figure 3 shows that the “above_avg” group shows a median score close to 95, with few outliers below 80. The “avg_minus” and “avg_plus” groups have similar distributions, with medians around 93-94, but with more outliers below 80. The “below_avg” group has the widest range of scores, with many outliers extending all the way to around 20, indicating more inconsistency and lower scores overall. The significant p-value (`r formatC(round(p_value, 3), format = "f", digits = 3)`) in Table 8 indicates a significant difference in review scores between the two groups. The confidence interval (`r round(ci_lower, 3)` to `r round(ci_upper, 3)`) does not include zero, reinforcing the statistical significance. It also highlights that the "above_avg" group has a higher mean review score compared to the "below_avg" group.
+
+### Conclusion
+properties with prices at different levels relative to the regional average price do have significantly different ratings.  
+
+Property prices significantly impact review scores. The "above_avg" price group has a notably higher average review score compared to the "below_avg" group. The T-test results confirm that this difference is statistically significant. This finding indicates that higher-priced properties are generally rated more favorably by guests. Guests may associate higher prices with better quality or amenities, leading to better reviews for more expensive properties. Therefore, pricing strategies should consider the positive impact on review scores and overall guest satisfaction.
 
 
-The ANOVA test [@tab:kable_price_group_t_test2] indicates significant differences among the groups. The t-test [@tab:kable_price_group_t_test2] between the below_avg and above_avg groups yields a t-value of -8.046068 and a p-value of 0.000000, confirming a significant difference in review scores.The box plot [tab:group_summary] visually supports these findings, showing lower median scores and a wider spread for the below_avg group.
- 
-The significant differences in review scores based on price relative to the regional average indicate that pricing strategy affects customer satisfaction. Properties priced below the regional average tend to receive lower review scores, suggesting that guests may associate lower prices with lower quality or have higher expectations for such properties. Conversely, properties priced above the regional average tend to receive higher review scores, possibly indicating that guests perceive these properties as higher quality or feel they are getting better value for their money.
-
+\newpage 
 
 ## Research question 2
 
-**Can property ratings be predicted using price, regional average price, number of bedrooms, number of accommodates, and number of bathrooms? Additionally, are the differences in ratings significant across different room types?**
+**Can property ratings be predicted using price, regional average price, number of bedrooms, number of accommodates,room types, and number of bathrooms?**
 
 ### Objective
 
 To determine whether property ratings can be predicted based on factors such as price, regional average price, number of bedrooms, number of accommodates, and number of bathrooms. Additionally, we aim to identify if there are significant differences in ratings across different room types.
+\begin{align*}
+\hat{Y} &= \beta_0 + \beta_1 \cdot \text{price} + \beta_2 \cdot \text{region\_average\_price} \\
+        &+ \beta_3 \cdot \text{bedrooms} + \beta_4 \cdot \text{accommodates} \\
+        &+ \beta_5 \cdot \text{bathrooms} + \beta_6 \cdot \text{room\_type (Shared Room)} + \epsilon \ \ \ \ \ \ (model \ 1)
+\end{align*}
+We employed this linear regression model (model 1) to analyze the relationship between property ratings and various predictor variables, including price, regional average price, number of bedrooms, number of accommodates, number of bathrooms, and room type. The analysis involved constructing a linear regression model with review_scores_rating as the dependent variable and the aforementioned predictors as independent variables. We then analyzed the regression output to interpret the significance and impact of each predictor. To further evaluate the model, we generated a residual plot to visualize the distribution of residuals versus fitted values, which helps in assessing the model's fit, and a QQ plot to evaluate the normality of residuals, which is essential for validating the assumptions of linear regression.
 
-### Method
 
-We employed a linear regression model to analyze the relationship between property ratings and various predictor variables. The steps are as follows:
-
-1. **Build Linear Regression Model:**
-   * Construct a linear regression model using `review_scores_rating` as the dependent variable and `price`, `region_average_price`, `bedrooms`, `accommodates`, `bathrooms`, and `room_type` as independent variables.
-2. **View Regression Results:**
-   * Analyze the regression output to interpret the significance and impact of each predictor variable.
-3. **Generate Residual Plot:**
-   * Create a residual plot to visualize the distribution of residuals versus fitted values, which helps in assessing the model's fit.
-4. **Generate QQ Plot:**
-   * Create a QQ plot to evaluate the normality of residuals, which is essential for validating the assumptions of linear regression.
 
 ### Result
 
-The regression analysis and plots are summarized below:
 
-**Regression Summary:**
-
-* **Coefficients:**
-  * **Intercept:** 94.63 (p < 2e-16)
-  * **Price:** 0.02 (p = 2.87e-10)
-  * **Region Average Price:** -0.02 (p = 0.00663)
-  * **Bedrooms:** 0.48 (p = 0.07255)
-  * **Accommodates:** -0.93 (p = 2.56e-13)
-  * **Bathrooms:** 1.06 (p = 0.03459)
-  * **Room Type (Private Room):** -2.78 (p = 7.54e-16)
-  * **Room Type (Shared Room):** -4.68 (p = 0.00159)
-* **Model Fit:**
-  * **Residual standard error:** 7.006
-  * **Multiple R-squared:** 0.05023
-  * **Adjusted R-squared:** 0.04854
-  * **F-statistic:** 29.6 (p-value < 2.2e-16)
-
-**Residual Plot:**
-
-* The residuals vs fitted values plot shows a slight pattern, indicating potential non-linearity or heteroscedasticity.
-
-
-**QQ Plot:**
-
-* The QQ plot indicates some deviation from normality at the tails, suggesting that the residuals are not perfectly normally distributed.
-
-```{r echo=FALSE} 
+```{r echo=FALSE, results='hide'} 
 
 # Build linear regression model
 linear_model <- lm(review_scores_rating ~ price + region_average_price + bedrooms + accommodates + bathrooms + room_type, data = tb.clean)
 
-# View regression results
-summary(linear_model)
+# View regression results  
+reg_summary <- summary(linear_model)
+reg_summary
 
 # Generate residual plot
 residuals <- resid(linear_model)
-fitted_values <- fitted(linear_model)
+fitted_values <- fitted(linear_model) 
+```
+```{r echo=FALSE}
+
+# Coefficients to be used in the dataframe
+coef_names <- c("(Intercept)", "Price", "Region Average Price", "Bedrooms", "Accommodates", "Bathrooms", "Room Type (Private Room)", "Room Type (Shared Room)")
+
+# Initialize empty vectors for the dataframe
+estimates <- numeric(length(coef_names))
+std_errors <- numeric(length(coef_names))
+t_values <- numeric(length(coef_names))
+p_values <- character(length(coef_names))
+
+# Loop through each coefficient and populate the vectors
+for (i in seq_along(coef_names)) {
+  estimates[i] <- round(reg_summary$coefficients[i, 1], 3)
+  std_errors[i] <- round(reg_summary$coefficients[i, 2], 3)
+  t_values[i] <- round(reg_summary$coefficients[i, 3], 3)
+  p_values[i] <- format.pval(reg_summary$coefficients[i, 4], digits = 3)
+}
+
+# Create the summary dataframe
+summary_df <- data.frame(
+  Coefficient = coef_names,
+  Estimate = estimates,
+  Std_Error = std_errors,
+  t_value = t_values,
+  P_value_Sig = p_values
+)
+
+ 
+# Display the dataframe using kable
+kable(summary_df, caption = "Linear Regression Model for Guest Satisfaction Summary", escape = TRUE)
+ 
+ # kable_styling(font_size = 7)
+
+cat(sprintf("Residual standard error: %.3f", reg_summary$sigma))
+cat(sprintf("Multiple R-squared: %.5f", reg_summary$r.squared))
+cat(sprintf("Adjusted R-squared: %.5f", reg_summary$adj.r.squared))
+cat(sprintf("F-statistic: %.1f (p-value < %.1e)", reg_summary$fstatistic[1], pf(reg_summary$fstatistic[1], reg_summary$fstatistic[2], reg_summary$fstatistic[3], lower.tail = FALSE)))
+```
+
+```{r echo=FALSE,fig.cap="Linear Regression Model Evaluation", fig.width=8, fig.height=8, fig.align="center", out.width="49%", fig.show="hold"}
+# Generate residual plot with clearer labels
 ggplot(data = NULL, aes(x = fitted_values, y = residuals)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "loess", color = "blue") +
   labs(title = "Residuals vs Fitted Values",
-       x = "Fitted Values",
-       y = "Residuals") +
+       x = "Fitted Values (Predicted Review Scores)",
+       y = "Residuals (Errors)") +
   theme_minimal()
 
-# Generate QQ plot
-qqPlot(linear_model, main = "QQ Plot")
+# Generate QQ plot with clearer labels
+qqPlot(linear_model, main = "QQ Plot of Residuals",
+       ylab = "Standardized Residuals",
+       xlab = "Theoretical Quantiles")
 ```
 
 
-### analysis
+### Analysis
 
-**Obvious:**
-The regression summary shows that price, region average price, number of accommodates, number of bathrooms, and room type have significant coefficients. The residual plot indicates potential issues with non-linearity or heteroscedasticity, and the QQ plot suggests deviations from normality.
+Table 9 reveals significant relationships between review scores and several predictors: price (Estimate: `r round(reg_summary$coefficients["price", "Estimate"], 3)`, p = `r format.pval(reg_summary$coefficients["price", "Pr(>|t|)"], digits = 3)`), regional average price (Estimate: `r round(reg_summary$coefficients["region_average_price", "Estimate"], 3)`, p = `r format.pval(reg_summary$coefficients["region_average_price", "Pr(>|t|)"], digits = 3)`), accommodates (Estimate: `r round(reg_summary$coefficients["accommodates", "Estimate"], 3)`, p = `r format.pval(reg_summary$coefficients["accommodates", "Pr(>|t|)"], digits = 3)`), bathrooms (Estimate: `r round(reg_summary$coefficients["bathrooms", "Estimate"], 3)`, p = `r format.pval(reg_summary$coefficients["bathrooms", "Pr(>|t|)"], digits = 3)`), and room types (Private Room: `r round(reg_summary$coefficients["room_typePrivate room", "Estimate"], 3)`, p = `r format.pval(reg_summary$coefficients["room_typePrivate room", "Pr(>|t|)"], digits = 3)`; Shared Room: `r round(reg_summary$coefficients["room_typeShared room", "Estimate"], 3)`, p = `r format.pval(reg_summary$coefficients["room_typeShared room", "Pr(>|t|)"], digits = 3)`). The model fit, with a multiple R-squared of `r round(reg_summary$r.squared, 3)` and an adjusted R-squared of `r round(reg_summary$adj.r.squared, 3)`, indicates that the model explains a small portion of the variance in review scores, suggesting limited explanatory power.
 
-**Specify:**
 
-* **Significant Predictors:**
-  * **Price (Estimate: 0.02):** Positive significant relationship with review scores.
-  * **Region Average Price (Estimate: -0.02):** Negative significant relationship with review scores.
-  * **Accommodates (Estimate: -0.93):** Negative significant relationship with review scores.
-  * **Bathrooms (Estimate: 1.06):** Positive significant relationship with review scores.
-  * **Room Type (Private Room: -2.78, Shared Room: -4.68):** Significant negative relationships with review scores compared to entire homes/apartments.
-* **Model Fit:** The R-squared value indicates that the model explains a small portion of the variance in review scores.
 
-**Evidence:**
 
-* **Coefficients:** Price (p = 2.87e-10), Region Average Price (p = 0.00663), Accommodates (p = 2.56e-13), Bathrooms (p = 0.03459), Private Room (p = 7.54e-16), Shared Room (p = 0.00159).
-* **Model Statistics:** Residual standard error = 7.006, Multiple R-squared = 0.05023, Adjusted R-squared = 0.04854, F-statistic = 29.6 (p-value < 2.2e-16).
+The plot in Figure 4 Left shows heteroscedasticity, indicating that the variance of residuals increases with fitted values. This suggests that the linear regression model does not fully capture the relationship between predictors and review scores, leading to potential biases. Model adjustments, such as transforming variables or using a different modeling approach, may be necessary to improve fit.
 
-**Meaning:**
-The results indicate that higher prices and more bathrooms are associated with higher review scores, while more accommodates and certain room types (private or shared rooms) are associated with lower review scores. The negative relationship with regional average price suggests that properties priced significantly above the regional average may receive lower ratings, potentially due to higher guest expectations. Although the model's explanatory power is limited (low R-squared), it provides useful insights into factors influencing property ratings.
 
+
+The QQ plot in Figure 4 right indicates deviations from normality, particularly at the tails,suggesting the presence of outliers or heavy tails in the data.  The points should ideally form a straight line if the residuals are normally distributed. However, in  this case, the points deviate from the line, especially at the ends.  The large deviations at the ends suggest that there are outliers and that the residuals are not symmetrically distributed, indicating skewness.This violation of the normality assumption implies that the model may produce ineﬀicient estimates.  
+
+### Conclusion
+
+
+It is not possible to predict property ratings using price, average price for the area, number of bedrooms, capacity, and number of bathrooms, as the model can only explain about 5% of the variance in the ratings. However, we can note that higher prices and more bathrooms lead to higher ratings, while higher capacity and higher average price for the area lead to lower ratings. Room type has a significant impact on ratings, with private and shared rooms receiving lower ratings than the entire house/apartment. However, the residuals and QQ plots indicate problems with heteroskedasticity and non-normality, suggesting that a more complex model is needed. 
+
+
+\newpage 
 ## Research question 3
 
-**Can high ratings  (scores greater than or equal to 95) be predicted using price, regional average price, number of bedrooms, number of bathrooms, host response rate, and room type?**
+**Can high ratings (scores greater than or equal to 95) be predicted using price, host tenure, number of reviews, regional average price, and host response rate?**
 
 ### Objective
 
-To determine whether high ratings  (scores greater than or equal to 95) can be predicted based on factors such as price, regional average price, number of bedrooms, number of bathrooms, host response rate, and room type.
+To determine whether high ratings (scores greater than or equal to 95) can be predicted based on factors such as price, host tenure, number of reviews, regional average price, and host response rate.
+\begin{align*}
+\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) &= \beta_0 + \beta_1 \cdot \text{price} + \beta_2 \cdot \text{region\_average\_price} + \beta_3 \cdot \text{host\_since\_year} \\
+&+ \beta_4 \cdot \text{number\_of\_reviews} + \beta_5 \cdot \text{host\_response\_rate} \ \ \ \ \ \ (model \ 2)
+\end{align*}
+We employed this logistic regression model(model 2) to analyze the relationship between the likelihood of receiving a high rating and various predictor variables. Firstly,We added a binary variable `high_rating` indicating whether a property has a rating of 95 or higher (1) or not (0). We then built a logistic regression model using `high_rating` as the dependent variable and `price`, `region_average_price`, `host_since_year`, `number_of_reviews`, and `host_response_rate` as independent variables. We analyzed the logistic regression output to interpret the significance and impact of each predictor variable. Additionally, we generated a confusion matrix to evaluate the model's accuracy, sensitivity, specificity, and other performance metrics. We also plotted the ROC curve and calculated the Area Under the Curve (AUC) to assess the model's ability to distinguish between high and low ratings.
 
-### Method
-
-We employed a logistic regression model to analyze the relationship between the likelihood of receiving a high rating and various predictor variables. The steps are as follows:
-
-1. **Add Binary Variable for High Ratings:**
-   * Create a new binary variable `high_rating` indicating whether a property has a rating of 95 or higher (1) or not (0).
-2. **Build Logistic Regression Model:**
-   * Construct a logistic regression model using `high_rating` as the dependent variable and `price`, `region_average_price`, `bedrooms`, `bathrooms`, `host_response_rate`, and `room_type` as independent variables.
-3. **View Regression Results:**
-   * Analyze the logistic regression output to interpret the significance and impact of each predictor variable.
-4. **Generate Confusion Matrix:**
-   * Create a confusion matrix to evaluate the model's accuracy, sensitivity, specificity, and other performance metrics.
-5. **Generate ROC Curve and AUC Value:**
-   * Plot the ROC curve and calculate the Area Under the Curve (AUC) to assess the model's ability to distinguish between high and low ratings.
-   * ### Result
-
-The logistic regression analysis and evaluation metrics are summarized below:
-
-**Regression Summary:**
-**Confusion Matrix:**
-  
-**ROC Curve:**
+### Result
  
 
 
@@ -791,91 +823,152 @@ tb.analysis3 <- tb.clean %>%
   mutate(high_rating = ifelse(review_scores_rating >= 95, 1, 0))
 
 # Build logistic regression model
-logistic_model <- glm(high_rating ~ price + region_average_price + bedrooms + bathrooms + host_response_rate + room_type, data = tb.analysis3, family = binomial)
+logistic_model <- glm(high_rating ~ price + region_average_price + host_since_year + number_of_reviews + host_response_rate , data = tb.analysis3, family = binomial)
+ 
+# View regression results  
+reg_summary <- summary(logistic_model) 
 
-#View regression results
-summary(logistic_model)
-
-#Generate confusion matrix 
+#  Generate predicted values
 predicted <- ifelse(predict(logistic_model, type = "response") > 0.5, 1, 0)
-confusionMatrix(factor(predicted), factor(tb.analysis3$high_rating))
 
+
+
+#reg_summary
+```
+
+```{r echo=FALSE}
+# Initialize empty vectors for coefficients
+coef_names <- c("(Intercept)", "Price", "Region Average Price", "Host Since Year", "Number Of Reviews", "Host Response Rate")
+estimates <- numeric(length(coef_names))
+std_errors <- numeric(length(coef_names))
+z_values <- numeric(length(coef_names))
+p_values <- character(length(coef_names))
+
+# Loop through each coefficient
+for (i in 1:length(coef_names)) {
+  estimates[i] <- round(reg_summary$coefficients[i, 1], 3)
+  std_errors[i] <- round(reg_summary$coefficients[i, 2], 3)
+  z_values[i] <- round(reg_summary$coefficients[i, 3], 3)
+  p_values[i] <- format.pval(reg_summary$coefficients[i, 4], digits = 3)
+}
+
+# Create the summary data frame
+summary_df <- data.frame(
+  Coefficient = coef_names,
+  Estimate = estimates,
+  `Std. Error` = std_errors,
+  `z value` = z_values,
+  `p-value` = p_values
+)
+
+knitr::kable(summary_df, caption = "Logistic Regression Model Summary for Guest Satisfaction")
+```
+
+
+```{r echo=FALSE}
+
+# Add confusion matrix result
+conf_matrix <- confusionMatrix(factor(predicted), factor(tb.analysis3$high_rating))
+conf_matrix_df <- data.frame(
+  Reference = c("0", "1"),
+  `Prediction 0` = c(conf_matrix$table[1, 1], conf_matrix$table[1, 2]),
+  `Prediction 1` = c(conf_matrix$table[2, 1], conf_matrix$table[2, 2])
+)
+
+knitr::kable(conf_matrix_df, caption = "Confusion Matrix for Logistic Regression Model")
+
+# Adding additional statistics
+s_value = c()
+s_name = c("Accuracy", "Kappa", "AccuracyLower", "AccuracyUpper", "AccuracyNull", "AccuracyPValue", "McnemarPValue")
+
+for(x in s_name){ 
+  s_value <- append(s_value, conf_matrix[["overall"]][[x]])
+}
+
+data2 <- data.frame(
+  Statistic_Name = s_name,
+  Value = s_value
+)
+
+knitr::kable(data2, caption = "Additional Statistics from Confusion Matrix")
+ 
+```
+
+
+
+
+```{r echo=FALSE} 
 #Generate ROC curve and AUC value
 pred <- prediction(predict(logistic_model, type = "response"), tb.analysis3$high_rating)
 perf <- performance(pred, "tpr", "fpr")
 auc <- performance(pred, "auc")
 auc <- auc@y.values[[1]]
 
-plot(perf, col = "blue", main = "ROC Curve")
+plot(perf, col = "blue", main = "ROC Curve of High Ratings Prediction",)
 abline(a = 0, b = 1, lty = 2, col = "gray")
 legend("bottomright", legend = paste("AUC =", round(auc, 3)), col = "blue", lty = 1)
 
 ```
 
+### Analysis
+ 
+Price has a positive significant relationship with high ratings (Estimate: `r estimates[2]`, p = `r p_values[2]`).
+Host response rate has a strong positive significant relationship with high ratings (Estimate: `r estimates[6]`, p = `r p_values[6]`).
+Number of reviews has a negative significant relationship with high ratings (Estimate: `r estimates[5]`, p = `r p_values[5]`).
+Host tenure (host_since_year) and regional average price were not significant predictors.
+The confusion matrix provides performance metrics, indicating an accuracy of `r round(conf_matrix$overall['Accuracy'], 4)`. An ROC curve closer to the upper left corner signifies a better model performance. In this case, the curve leans more towards the diagonal, indicating the model is only slightly better than random chance at distinguishing between high and low ratings.The ROC curve shows an AUC of `r round(auc, 3)`, suggesting the model has moderate ability to distinguish between high and low ratings.
 
-### analysis
+### Conclusion
+The results show that higher prices and higher host response rates increase the likelihood of having a high rating, while higher numbers of reviews decrease the likelihood. Host tenure and average price by region are not significant predictors. However, the moderate AUC value and accuracy of `r round(conf_matrix$overall['Accuracy'], 4)` indicate that the model has limited predictive power and is not strong enough to reliably predict high ratings. Therefore, we cannot use price, host tenure , number of reviews, average price by region, and host response rate to predict high ratings.
 
-**Obvious:**
-The logistic regression summary shows that price, host response rate, and room type are significant predictors of high ratings. The confusion matrix provides performance metrics, indicating a moderate accuracy of 58.52%. The ROC curve shows an AUC of 0.606, suggesting the model has a moderate ability to distinguish between high and low ratings.
-
-**Specify:**
-
-* **Significant Predictors:**
-  * **Price (Estimate: 0.01):** Positive significant relationship with high ratings.
-  * **Host Response Rate (Estimate: 2.61):** Strong positive significant relationship with high ratings.
-  * **Room Type (Private Room: -0.58, Shared Room: -1.47):** Significant negative relationships with high ratings compared to entire homes/apartments.
-* **Model Fit:** The AUC value of 0.606 indicates that the model has moderate discrimination ability.
-
-**Evidence:**
-
-* **Regression Coefficients:** Price (p = 0.001), Host Response Rate (p < 2e-16), Room Type (Private Room: p = 0.014, Shared Room: p = 0.042).
-* **Confusion Matrix Metrics:** Accuracy = 0.5852, Sensitivity = 0.3376, Specificity = 0.8069, Balanced Accuracy = 0.5723.
-* **ROC Curve:** AUC = 0.606.
-
-**Meaning:**
-The results indicate that higher prices and higher host response rates increase the likelihood of receiving high ratings, while private and shared rooms are less likely to receive high ratings compared to entire homes/apartments. Although regional average price, number of bedrooms, and number of bathrooms were not significant predictors, the model suggests that property features and host responsiveness play crucial roles in achieving high ratings. However, the moderate AUC value suggests that the model's predictive power is limited and may benefit from additional or alternative predictors.  
-
-
-
+ 
 
 \newpage
 # Conclusion
  
 
-Our analysis provides several key insights into the factors influencing property ratings and guest satisfaction on Airbnb. These findings have practical implications for property owners looking to enhance their listings and improve their review scores. Additionally, I gained a deeper understanding of statistical analysis using R, which will be valuable for future research and practical applications.
+Our analysis provides several key insights into the factors influencing home ratings and guest satisfaction on Airbnb. These findings have practical implications for hosts who want to improve their listings and boost their ratings. In addition, I gained a deeper understanding of statistical analysis using R, which is valuable for future research and practical applications.
 
-##Implications
+## Significance
 
-The study highlights the significant impact of pricing strategy, room features, and host responsiveness on guest satisfaction. Property owners can leverage these insights to make strategic adjustments:
+This study highlights the significant impact of pricing strategy, room features, and host responsiveness on guest satisfaction. Hosts can use these insights to make strategic adjustments:
 
-1. **Adjusting Prices:** Setting competitive and appropriate prices that reflect the quality of the property can help meet or exceed guest expectations, leading to higher satisfaction.
-2. **Enhancing Property Features:** Adding more bathrooms and optimizing the number of accommodates can cater to guest needs more effectively, contributing to better reviews.
-3. **Improving Host Responsiveness:** Maintaining high response rates can enhance guest experiences, fostering positive reviews and higher ratings.
+1. **Adjusting Prices:** Setting competitive and appropriate prices that reflect the quality of the listing can help meet or exceed guest expectations, thereby improving satisfaction.
+2. **Enhancing Listing Features:** Adding more bathrooms and optimizing the number of nights can more effectively meet guests' needs, leading to better reviews.
+3. **Improving Host Responsiveness:** Maintaining a high response rate can enhance the guest experience and promote positive reviews and higher ratings.
+4. **Importance of Public Opinion:** The greater the number of reviews, the lower the likelihood of a positive review. Hosts need to pay more attention to public opinion.
 
-By focusing on these areas, property owners can attract more bookings and achieve better overall ratings, boosting their market presence and appeal.
+By focusing on these areas, hosts can attract more bookings and receive better overall ratings, thereby improving their market presence and attractiveness.
 
 ## Limitations
 
-While our analysis offers valuable insights, there are some limitations to consider. Objective limitations, such as the exclusion of location-related variables (e.g., latitude, longitude, neighbourhood), were necessary because analyzing them would require more detailed information about transportation, local amenities, population density, and city layout. Complexity was another factor; this experiment primarily focuses on learning statistical methods using R, not intended to be a comprehensive analysis but rather an attempt to explore the impact of a few common variables on property ratings. Furthermore, several columns in the dataset, such as “host_id,” “host_name,” “host_since_year,” “Customer Since,” “property_type,” and various review sub-scores (e.g., “review_scores_accuracy,” “review_scores_cleanliness”) were not used in our current analysis. These unutilized variables may contain valuable information that could enhance the predictive power of our models. Lastly, the assumptions underlying linear and logistic regression models, such as normality of residuals and homoscedasticity, may not hold perfectly, which could impact the robustness of our conclusions. Acknowledging these limitations is crucial for interpreting the results and considering areas for improvement.
+While our analysis provides valuable insights, there are still some limitations to consider. Objective limitations, such as excluding variables related to location (e.g., latitude, longitude, neighborhood), are necessary because analyzing them requires more detailed information about transportation, local facilities, population density, and urban layout. Complexity is another factor; this experiment focuses primarily on learning statistical methods using R and is not intended to be a comprehensive analysis, but rather an attempt to explore the impact of some common variables on property ratings. In addition, several columns in the dataset are not used in our current analysis. These unused variables may contain valuable information that can enhance the predictive power of our model. Acknowledging these limitations is critical for interpreting results and considering areas for improvement.
 
 ## Challenges Encountered
 
-During this research, we faced several challenges. Ensuring the accuracy and completeness of the dataset was challenging, with missing values and inconsistent data entries requiring significant preprocessing effort. Choosing the most relevant variables from a large dataset was complex, requiring careful consideration of each variable's potential impact on the analysis. Ensuring that the data met the assumptions required for linear and logistic regression models was challenging, particularly regarding the normality of residuals and homoscedasticity. Balancing statistical significance with practical relevance required careful interpretation to provide meaningful insights for property owners.
+In this study, we faced several challenges. Ensuring the accuracy and completeness of the dataset was a challenge, with missing values and inconsistent data entry requiring extensive preprocessing efforts. Selecting the most relevant variables from a large dataset is complex and requires careful consideration of each variable's potential impact on the analysis. Ensuring that the data meets the assumptions required for linear and logistic regression models is a challenge, especially in terms of normality and homoscedasticity of residuals. In Research Questions 2 and 3, we used different variables designed to predict high ratings, but still did not obtain accurate predictions. Specifically, the logistic regression models in Research Questions  2 and 3 showed that while higher price and host response rate were significant predictors of high ratings, the overall accuracy and predictive power of these models were limited.
 
-## Opportunities for Future Work
+## Future Work Opportunities
 
-Future research can build on our findings to provide a deeper understanding of what drives guest satisfaction. Including more variables such as “property_type,” “host_since_year,” “latitude,” “longitude,” and various review sub-scores like “review_scores_accuracy,” “review_scores_cleanliness,” and “review_scores_communication” could improve the accuracy and explanatory power of the models. Employing more sophisticated approaches, such as machine learning, can better capture complex relationships and interactions between variables. Studying changes over time can reveal how ongoing property improvements and pricing adjustments influence guest satisfaction and ratings. Analyzing qualitative feedback from guest reviews can uncover additional factors that contribute to high ratings, offering more nuanced insights. Exploring the potential of unused columns, such as “host_response_time,” “number_of_reviews,” and “extra_people,” could provide additional predictive power and offer more comprehensive insights into guest satisfaction dynamics. By exploring these opportunities, future studies can enhance our understanding of guest preferences and help property owners better cater to their needs, ultimately leading to improved ratings and success in the competitive Airbnb market.
+Future research can build on our findings to better understand the factors that drive guest satisfaction. Including more variables such as  “latitude” and “longitude” and then incorporating specific city maps, transportation, and business amenities can improve the accuracy and explanatory power of the model. Employing more sophisticated methods, such as machine learning, can better capture the complex relationships and interactions between variables. Studying changes over time can reveal how continuous improvements and price adjustments to properties affect guest satisfaction and ratings. Analyzing qualitative feedback from guest reviews can reveal additional factors that contribute to high ratings, providing more nuanced insights. Exploring the potential of unused columns can provide additional predictive power and provide more comprehensive insights into the dynamics of guest satisfaction. By exploring these opportunities, future research can enhance our understanding of guest preferences, help hosts better meet their needs, and ultimately improve ratings and succeed in the competitive Airbnb market.
 
-
+\newpage
 # References
 
 <div id="refs"></div>
 \newpage
-# Appendix: Glossary of Statistical Terms
 
-This glossary provides definitions of statistical terms and concepts used throughout the report.
+# Appendix: Source Code
 
-## Glossary
+For detailed insights into the methods and analyses conducted in this study, the complete source code is available at the following GitHub repository:
+
+[https://github.com/guangliangyang/r-study](https://github.com/guangliangyang/r-study)
+
+
+\newpage
+
+# Appendix: Glossary 
+
 
 1. **ANOVA (Analysis of Variance)**: A statistical method used to compare the means of three or more groups to determine if there are significant differences among them.
 
@@ -919,6 +1012,8 @@ This glossary provides definitions of statistical terms and concepts used throug
 
 This glossary is intended to provide clear definitions and help readers understand the statistical terms used in the analysis.
 
+
+\newpage
 # Appendix: R Environment
 ```{r r_environ}
 format(Sys.time(), '%d %B %Y')
