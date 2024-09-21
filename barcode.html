@@ -13,32 +13,33 @@
         }
 
         #scanner-container {
-            flex: 1;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            margin: 10px;
+            justify-content: center;
+            width: 100%;
         }
 
         #interactive {
             width: 100%;
             max-width: 100%;
-            height: 300px; /* 限制视频区域的高度 */
+            height: 300px;
             border: 1px solid silver;
         }
 
         #result-container {
-            padding: 20px;
+            padding: 10px;
+            width: 100%;
             text-align: center;
         }
 
         textarea {
             width: 90%;
             height: 100px;
+            margin-bottom: 10px;
         }
 
         button {
-            margin-top: 10px;
             padding: 10px 20px;
             font-size: 16px;
         }
@@ -68,13 +69,21 @@
         inputStream: {
             name: "Live",
             type: "LiveStream",
-            target: document.querySelector('#interactive'),  // 摄像头视频流插入的目标区域
+            target: document.querySelector('#interactive'),
             constraints: {
-                facingMode: "environment" // 使用后置摄像头
+                facingMode: "environment", // 使用后置摄像头
+                width: { min: 640 },
+                height: { min: 480 }
             }
         },
         decoder: {
-            readers: ["code_128_reader"] // 扫描条形码的类型
+            readers: [
+                "code_128_reader", // 常见的Code 128条形码
+                "ean_reader",      // EAN 条形码
+                "upc_reader",      // UPC 条形码
+                "code_39_reader",  // Code 39 条形码
+                "i2of5_reader"     // Interleaved 2 of 5 条形码
+            ]
         }
     }, function(err) {
         if (err) {
@@ -88,6 +97,15 @@
     Quagga.onDetected(function(result) {
         var code = result.codeResult.code;
         document.getElementById('barcodeResult').value += code + '\n'; // 将结果追加到文本框
+    });
+
+    // 调试每帧的处理结果
+    Quagga.onProcessed(function(result) {
+        if (result && result.codeResult && result.codeResult.code) {
+            console.log("Detected code: " + result.codeResult.code);
+        } else {
+            console.log("No code detected in this frame.");
+        }
     });
 
     // 复制结果到剪贴板
