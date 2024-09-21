@@ -3,54 +3,97 @@
 <head>
     <title>Barcode Scanner</title>
     <style>
-        #interactive.viewport {position: relative; width: 100%; height: 300px; border: 1px solid silver;}
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #scanner-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px;
+        }
+
+        #interactive {
+            width: 100%;
+            max-width: 100%;
+            height: 300px; /* 限制视频区域的高度 */
+            border: 1px solid silver;
+        }
+
+        #result-container {
+            padding: 20px;
+            text-align: center;
+        }
+
+        textarea {
+            width: 90%;
+            height: 100px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
 
-<h1>Scan Barcode</h1>
-<div id="interactive" class="viewport"></div>
-<div>
+<h1 style="text-align:center;">Scan Barcode</h1>
+
+<!-- 摄像头区域 -->
+<div id="scanner-container">
+    <div id="interactive" class="viewport"></div>
+</div>
+
+<!-- 扫描结果显示区域 -->
+<div id="result-container">
     <h3>Scanned Result:</h3>
-    <textarea id="barcodeResult" rows="4" cols="50" readonly></textarea>
+    <textarea id="barcodeResult" readonly></textarea><br>
     <button onclick="copyResult()">Copy to Clipboard</button>
 </div>
 
+<!-- QuaggaJS Barcode Scanner -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script>
-    // Initialize QuaggaJS
+    // 初始化 QuaggaJS
     Quagga.init({
         inputStream: {
             name: "Live",
             type: "LiveStream",
-            target: document.querySelector('#interactive'),    // Or '#yourElement' where to append the stream
+            target: document.querySelector('#interactive'),  // 摄像头视频流插入的目标区域
             constraints: {
-                facingMode: "environment" // Use the rear camera
+                facingMode: "environment" // 使用后置摄像头
             }
         },
         decoder: {
-            readers: ["code_128_reader"] // List of barcode types to search for
+            readers: ["code_128_reader"] // 扫描条形码的类型
         }
     }, function(err) {
         if (err) {
-            console.log(err);
+            console.error(err);
             return;
         }
-        console.log("Initialization finished. Ready to start");
-        Quagga.start();
+        Quagga.start(); // 开始视频流
     });
 
-    // Handle detected barcodes
+    // 检测到条形码时触发的事件
     Quagga.onDetected(function(result) {
         var code = result.codeResult.code;
-        document.getElementById('barcodeResult').value += code + '\n'; // Add detected code to textarea
+        document.getElementById('barcodeResult').value += code + '\n'; // 将结果追加到文本框
     });
 
-    // Function to copy results to clipboard
+    // 复制结果到剪贴板
     function copyResult() {
         var copyText = document.getElementById("barcodeResult");
         copyText.select();
-        copyText.setSelectionRange(0, 99999); // For mobile devices
         document.execCommand("copy");
         alert("Copied to clipboard: " + copyText.value);
     }
